@@ -30,7 +30,13 @@ FetchContent_MakeAvailable(googletest)
 # Add the project root directory to the include path
 include_directories(${CMAKE_SOURCE_DIR})
 
-add_executable(my_search_util src/main.cpp src/search_util.cpp)
+# Add all source files
+add_executable(my_search_util
+    src/main.cpp
+    src/boyer_moore.cpp
+    src/index_search.cpp
+    src/hybrid_search.cpp
+)
 
 enable_testing()
 add_subdirectory(tests)

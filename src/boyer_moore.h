@@ -1,5 +1,5 @@
-#ifndef SEARCH_UTIL_H
-#define SEARCH_UTIL_H
+#ifndef BOYER_MOORE_H
+#define BOYER_MOORE_H
 
 #include <string>
 #include <vector>
@@ -10,9 +10,9 @@
 
 namespace fs = std::filesystem;
 
-class SearchUtil {
+class BoyerMoore {
 public:
-    SearchUtil(const std::string& query, const std::string& path, bool case_insensitive = false);
+    BoyerMoore(const std::string& query, const std::string& path, bool case_insensitive = false);
     void search();
 
 private:
@@ -31,4 +31,4 @@ private:
     std::string to_lower(const std::string& s);
 };
 
-#endif // SEARCH_UTIL_H
+#endif // BOYER_MOORE_H

@@ -1,10 +1,10 @@
 include(GoogleTest)
 
-add_executable(test_search_util test_search_util.cpp ../src/search_util.cpp)
-target_link_libraries(test_search_util GTest::gtest GTest::gtest_main)
+add_executable(test_boyer_moore test_boyer_moore.cpp ../src/boyer_moore.cpp)
+target_link_libraries(test_boyer_moore GTest::gtest GTest::gtest_main)
 
 include(GoogleTest)
-gtest_discover_tests(test_search_util
+gtest_discover_tests(test_boyer_moore
     PROPERTIES WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 

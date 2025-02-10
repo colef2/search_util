@@ -1,4 +1,4 @@
-#include "search_util.h"
+#include "hybrid_search.h"
 #include <iostream>
 #include <string>
 
@@ -28,8 +28,15 @@ int main(int argc, char* argv[]) {
     std::string query = argv[1 + arg_offset];
     std::string path = argv[2 + arg_offset];
 
-    SearchUtil search_util(query, path, case_insensitive);
-    search_util.search();
+    HybridSearch hybrid_search;
+
+    if (fs::is_directory(path)) {
+        std::cout << "Building index..." << std::endl;
+        hybrid_search.build_index(path);
+    }
+
+    //std::cout << "Searching for '" << query << "' in " << path << std::endl;
+    hybrid_search.search(query, path);
 
     return 0;
 }

@@ -1,4 +1,4 @@
-#include "search_util.h"
+#include "boyer_moore.h"
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -7,7 +7,7 @@
 #include <vector>
 #include <future>
 
-const std::unordered_set<std::string> SearchUtil::blacklisted_extensions = {
+const std::unordered_set<std::string> BoyerMoore::blacklisted_extensions = {
     ".exe", ".dll", ".so", ".dylib", ".bin", ".app",
     ".o", ".obj", ".class",
     ".zip", ".tar", ".gz", ".bz2", ".7z", ".rar",
@@ -20,7 +20,7 @@ const std::unordered_set<std::string> SearchUtil::blacklisted_extensions = {
     ".dat", ".pkl"
 };
 
-SearchUtil::SearchUtil(const std::string& query, const std::string& path, bool case_insensitive)
+BoyerMoore::BoyerMoore(const std::string& query, const std::string& path, bool case_insensitive)
     : query(query), path(path), case_insensitive(case_insensitive),
       regex_pattern(case_insensitive ? std::regex(query, std::regex::icase) : std::regex(query)),
       bm_searcher(query.data(), query.data() + query.length())
@@ -30,14 +30,13 @@ SearchUtil::SearchUtil(const std::string& query, const std::string& path, bool c
     }
 }
 
-bool SearchUtil::should_skip_file(const fs::path& file_path) const {
+bool BoyerMoore::should_skip_file(const fs::path& file_path) const {
     std::string extension = file_path.extension().string();
     std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
     return blacklisted_extensions.find(extension) != blacklisted_extensions.end();
 }
 
-
-bool SearchUtil::is_ascii_file(const fs::path& file_path) {
+bool BoyerMoore::is_ascii_file(const fs::path& file_path) {
     std::ifstream file(file_path, std::ios::binary);
     char ch;
     while (file.get(ch)) {
@@ -48,13 +47,13 @@ bool SearchUtil::is_ascii_file(const fs::path& file_path) {
     return true;
 }
 
-std::string SearchUtil::normalize_path(const fs::path& path) {
+std::string BoyerMoore::normalize_path(const fs::path& path) {
     std::string normalized = path.string();
     std::replace(normalized.begin(), normalized.end(), '\\', '/'); // Replace backslashes with forward slashes
     return normalized;
 }
 
-std::string SearchUtil::search_file(const fs::path& file_path) {
+std::string BoyerMoore::search_file(const fs::path& file_path) {
     if (should_skip_file(file_path) || !is_ascii_file(file_path)) {
         return "";
     }
@@ -74,18 +73,18 @@ std::string SearchUtil::search_file(const fs::path& file_path) {
     return results.str();
 }
 
-std::string SearchUtil::to_lower(const std::string& s) {
+std::string BoyerMoore::to_lower(const std::string& s) {
     std::string lower = s;
     std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
     return lower;
 }
 
-void SearchUtil::search_directory(const fs::path& dir_path) {
+void BoyerMoore::search_directory(const fs::path& dir_path) {
     std::vector<std::future<std::string>> futures;
 
     for (const auto& entry : fs::recursive_directory_iterator(dir_path)) {
         if (entry.is_regular_file()) {
-            futures.push_back(std::async(std::launch::async, &SearchUtil::search_file, this, entry.path()));
+            futures.push_back(std::async(std::launch::async, &BoyerMoore::search_file, this, entry.path()));
         }
     }
 
@@ -97,7 +96,7 @@ void SearchUtil::search_directory(const fs::path& dir_path) {
     }
 }
 
-void SearchUtil::search() {
+void BoyerMoore::search() {
     fs::path search_path(path);
     if (fs::is_directory(search_path)) {
         search_directory(search_path);
@@ -107,4 +106,3 @@ void SearchUtil::search() {
         std::cout << "Invalid path: " << path << std::endl;
     }
 }
-
