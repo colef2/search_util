@@ -21,6 +21,7 @@ private:
     bool case_insensitive;
     std::regex regex_pattern;
     std::boyer_moore_searcher<const char*> bm_searcher;
+
     static const std::unordered_set<std::string> blacklisted_extensions;
 
     bool should_skip_file(const fs::path& file_path) const;

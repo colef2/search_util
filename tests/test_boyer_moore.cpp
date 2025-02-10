@@ -196,7 +196,6 @@ TEST_F(BoyerMooreTestFixture, MixedAsciiAndNonAsciiFile) {
     EXPECT_TRUE(output.empty()); // Output should be empty for mixed ASCII and non-ASCII files
 }
 
-
 TEST_F(BoyerMooreTestFixture, InvalidFilePath) {
     std::string query = "test";
     std::string path = "nonexistent_file.txt";

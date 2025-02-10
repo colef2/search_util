@@ -1,11 +1,20 @@
+# Include GoogleTest module
 include(GoogleTest)
 
-add_executable(test_boyer_moore test_boyer_moore.cpp ../src/boyer_moore.cpp)
-target_link_libraries(test_boyer_moore GTest::gtest GTest::gtest_main)
-
-include(GoogleTest)
-gtest_discover_tests(test_boyer_moore
-    PROPERTIES WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+# Define test executable
+add_executable(test_boyer_moore
+    test_boyer_moore.cpp
+    ../src/boyer_moore.cpp
 )
 
-set_tests_properties(${ALL_TESTS} PROPERTIES WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+# Link against GoogleTest libraries
+target_link_libraries(test_boyer_moore
+    PRIVATE
+    GTest::gtest
+    GTest::gtest_main
+)
+
+# Discover and add tests
+gtest_discover_tests(test_boyer_moore
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)

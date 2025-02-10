@@ -2,11 +2,10 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
-#include <string>
+#include <stack>
 #include <thread>
-#include <vector>
-#include <future>
 
+// If this were a security-focused application, would not have a blacklist or would handle differently.
 const std::unordered_set<std::string> BoyerMoore::blacklisted_extensions = {
     ".exe", ".dll", ".so", ".dylib", ".bin", ".app",
     ".o", ".obj", ".class",
@@ -59,6 +58,11 @@ std::string BoyerMoore::search_file(const fs::path& file_path) {
     }
 
     std::ifstream file(file_path);
+    if (!file) {
+        //std::cerr << "Error opening file: " << normalize_path(file_path) << std::endl;
+        return "";
+    }
+
     std::string line;
     std::string file_path_str = normalize_path(file_path.string());
     std::stringstream results;
@@ -81,28 +85,65 @@ std::string BoyerMoore::to_lower(const std::string& s) {
 
 void BoyerMoore::search_directory(const fs::path& dir_path) {
     std::vector<std::future<std::string>> futures;
+    std::stack<fs::path> directories_to_process; // Stack for manual recursion
+    directories_to_process.push(dir_path);
 
-    for (const auto& entry : fs::recursive_directory_iterator(dir_path)) {
-        if (entry.is_regular_file()) {
-            futures.push_back(std::async(std::launch::async, &BoyerMoore::search_file, this, entry.path()));
+    while (!directories_to_process.empty()) {
+        fs::path current_dir = directories_to_process.top();
+        directories_to_process.pop();
+
+        try {
+            for (const auto& entry : fs::directory_iterator(current_dir, fs::directory_options::skip_permission_denied)) {
+                try {
+                    if (entry.is_directory()) {
+                        // Add subdirectory to stack for later processing
+                        directories_to_process.push(entry.path());
+                    } else if (entry.is_regular_file()) {
+                        // Process file asynchronously
+                        futures.push_back(std::async(std::launch::async, &BoyerMoore::search_file, this, entry.path()));
+                    }
+                } catch (const fs::filesystem_error&) {
+                    /*std::cerr << "Error accessing entry: " << entry.path().string()
+                              << " - " << ex.what() << std::endl;*/
+                }
+            }
+        } catch (const fs::filesystem_error&) {
+            /*std::cerr << "Error accessing directory: " << current_dir.string()
+                      << " - " << e.what() << std::endl;*/
         }
     }
 
+    // Process all futures to ensure results are printed
     for (auto& future : futures) {
-        std::string result = future.get();
-        if (!result.empty()) {
-            std::cout << result;
+        try {
+            std::string result = future.get();
+            if (!result.empty()) {
+                std::cout << result;
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "Exception in async task: " << e.what() << std::endl;
         }
     }
 }
 
 void BoyerMoore::search() {
-    fs::path search_path(path);
-    if (fs::is_directory(search_path)) {
-        search_directory(search_path);
-    } else if (fs::is_regular_file(search_path)) {
-        std::cout << search_file(search_path);
-    } else {
-        std::cout << "Invalid path: " << path << std::endl;
+    try {
+        fs::path search_path(path);
+        if (fs::is_directory(search_path)) {
+            search_directory(search_path);
+        } else if (fs::is_regular_file(search_path)) {
+            // Directly print the result of searching a single file
+            std::cout << search_file(search_path);
+        } else {
+            std::cout << "Invalid path: " << path << "\n";
+        }
+    } catch (const fs::filesystem_error& e) {
+        std::cerr << "Caught filesystem_error during search: " << e.what() << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "Caught exception during search: " << e.what() << std::endl;
+    } catch (...) {
+        std::cerr << "Caught unknown exception during search." << std::endl;
     }
 }
+
+
