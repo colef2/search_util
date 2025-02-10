@@ -5,7 +5,9 @@
 4. Then running "cmake --build . --config Release" to Compile the project
 
 
-
+#Use Case
+1. ./Build/Debug/my_search_util "search" src/
+2. ./Build/Debug/my_search_util -i "SEARCH" src/
 
 #Overview
 -The goal of this project is to implement a Grep-like utility in C++ that recursively searches for a given query in all files within a directory. The utility will:
