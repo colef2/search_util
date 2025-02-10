@@ -25,6 +25,7 @@ private:
 
     bool should_skip_file(const fs::path& file_path) const;
     bool is_ascii_file(const fs::path& file_path);
+    std::string normalize_path(const fs::path& path);
     std::string search_file(const fs::path& file_path);
     void search_directory(const fs::path& dir_path);
     std::string to_lower(const std::string& s);

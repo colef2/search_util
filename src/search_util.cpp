@@ -48,6 +48,12 @@ bool SearchUtil::is_ascii_file(const fs::path& file_path) {
     return true;
 }
 
+std::string SearchUtil::normalize_path(const fs::path& path) {
+    std::string normalized = path.string();
+    std::replace(normalized.begin(), normalized.end(), '\\', '/'); // Replace backslashes with forward slashes
+    return normalized;
+}
+
 std::string SearchUtil::search_file(const fs::path& file_path) {
     if (should_skip_file(file_path) || !is_ascii_file(file_path)) {
         return "";
@@ -55,7 +61,7 @@ std::string SearchUtil::search_file(const fs::path& file_path) {
 
     std::ifstream file(file_path);
     std::string line;
-    std::string file_path_str = file_path.string();
+    std::string file_path_str = normalize_path(file_path.string());
     std::stringstream results;
 
     while (std::getline(file, line)) {
@@ -98,7 +104,7 @@ void SearchUtil::search() {
     } else if (fs::is_regular_file(search_path)) {
         std::cout << search_file(search_path);
     } else {
-        std::cerr << "Invalid path: " << path << std::endl;
+        std::cout << "Invalid path: " << path << std::endl;
     }
 }
 

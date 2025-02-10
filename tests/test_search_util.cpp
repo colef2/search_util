@@ -6,21 +6,6 @@
 
 namespace fs = std::filesystem;
 
-// Helper function to create a test file with given content
-void createTestFile(const std::string& path, const std::string& content) {
-    std::ofstream file(path);
-    file << content;
-    file.close();
-}
-
-// Helper function to read file contents
-std::string readFileContents(const std::string& path) {
-    std::ifstream file(path);
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    return buffer.str();
-}
-
 // Test fixture for shared setup and teardown
 class SearchTestFixture : public ::testing::Test {
 protected:
@@ -41,6 +26,22 @@ TEST_F(SearchTestFixture, BasicSearch) {
     std::string output = testing::internal::GetCapturedStdout();
 
     EXPECT_EQ(output, "\"test_files/basic.txt\": hello world\n");
+}
+
+TEST_F(SearchTestFixture, MultipleMatchesInFile) {
+    std::string query = "test";
+    std::string path = "test_files/multiple_matches.txt";
+
+    SearchUtil search_util(query, path);
+
+    testing::internal::CaptureStdout();
+    search_util.search();
+    std::string output = testing::internal::GetCapturedStdout();
+
+    EXPECT_EQ(output,
+              "\"test_files/multiple_matches.txt\": This is a test line.\n"
+              "\"test_files/multiple_matches.txt\": Another test line.\n"
+              "\"test_files/multiple_matches.txt\": Yet another test line.\n");
 }
 
 TEST_F(SearchTestFixture, CaseSensitiveSearch) {
@@ -70,7 +71,7 @@ TEST_F(SearchTestFixture, CaseInsensitiveSearch) {
 TEST_F(SearchTestFixture, EmptyQuery) {
     std::string query = "";
     std::string path = "test_files/basic.txt";
-    createTestFile(path, "hello world\nthis is a test\n");
+
     SearchUtil search_util(query, path);
 
     testing::internal::CaptureStdout();
@@ -83,7 +84,7 @@ TEST_F(SearchTestFixture, EmptyQuery) {
 TEST_F(SearchTestFixture, EmptyFile) {
     std::string query = "test";
     std::string path = "test_files/empty.txt";
-    createTestFile(path, "");
+
     SearchUtil search_util(query, path);
 
     testing::internal::CaptureStdout();
@@ -105,6 +106,19 @@ TEST_F(SearchTestFixture, NoMatches) {
     EXPECT_TRUE(output.empty());
 }
 
+TEST_F(SearchTestFixture, FileWithoutExtension) {
+    std::string query = "test";
+    std::string path = "test_files/file_without_extension";
+
+    SearchUtil search_util(query, path);
+
+    testing::internal::CaptureStdout();
+    search_util.search();
+    std::string output = testing::internal::GetCapturedStdout();
+
+    EXPECT_EQ(output, "\"test_files/file_without_extension\": This is a test content.\n");
+}
+
 TEST_F(SearchTestFixture, SpecialCharacters) {
     std::string query = "#pecial";
     std::string path = "test_files/special.txt";
@@ -117,7 +131,6 @@ TEST_F(SearchTestFixture, SpecialCharacters) {
     std::cerr << "Actual output: " << output << std::endl;
     EXPECT_EQ(output, "\"test_files/special.txt\": line with #pecial ch@r@cters\n");
 }
-
 
 TEST_F(SearchTestFixture, VeryLongLines) {
     std::string query = "a";
@@ -159,8 +172,6 @@ TEST_F(SearchTestFixture, LargeFile) {
 TEST_F(SearchTestFixture, DeepDirectory) {
     std::string query = "test";
     std::string path = "test_files/deep_directory";
-    fs::create_directories(path + "/sub1/sub2/sub3");
-    createTestFile(path + "/sub1/sub2/sub3/file.txt", "test content\n");
 
     SearchUtil search_util(query, path);
 
@@ -169,6 +180,19 @@ TEST_F(SearchTestFixture, DeepDirectory) {
     std::string output = testing::internal::GetCapturedStdout();
 
     EXPECT_EQ(output, "\"test_files/deep_directory/sub1/sub2/sub3/file.txt\": test content\n");
+}
+
+TEST_F(SearchTestFixture, MixedAsciiAndNonAsciiFile) {
+    std::string query = "test";
+    std::string path = "test_files/mixed_ascii_nonascii.txt";
+
+    SearchUtil search_util(query, path);
+
+    testing::internal::CaptureStdout();
+    search_util.search();
+    std::string output = testing::internal::GetCapturedStdout();
+
+    EXPECT_TRUE(output.empty());
 }
 
 TEST_F(SearchTestFixture, InvalidFilePath) {
@@ -186,7 +210,6 @@ TEST_F(SearchTestFixture, InvalidFilePath) {
 TEST_F(SearchTestFixture, NonAsciiFile) {
     std::string query = "test";
     std::string path = "test_files/non_ascii.txt";
-    createTestFile(path, "こんにちは\n");
 
     SearchUtil search_util(query, path);
 
@@ -195,4 +218,28 @@ TEST_F(SearchTestFixture, NonAsciiFile) {
     std::string output = testing::internal::GetCapturedStdout();
 
     EXPECT_TRUE(output.empty());
+}
+
+TEST_F(SearchTestFixture, DirectoryWithNoMatchingFiles) {
+    std::string query = "notfound";
+    std::string dir_path = "test_files/no_matches_dir";
+
+    // Create the directory and files without the query
+    fs::create_directories(dir_path);
+
+    std::ofstream file1(dir_path + "/file1.txt");
+    file1 << "This is some random text.";
+    file1.close();
+
+    std::ofstream file2(dir_path + "/file2.txt");
+    file2 << "Another unrelated line.";
+    file2.close();
+
+    SearchUtil search_util(query, dir_path);
+
+    testing::internal::CaptureStdout();
+    search_util.search();
+    std::string output = testing::internal::GetCapturedStdout();
+
+    EXPECT_EQ(output, "");
 }

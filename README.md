@@ -15,3 +15,10 @@
 -Utilize all available CPU cores for parallel processing.
 -Handle large directories and files efficiently.
 -Exclude files with non-ASCII content.
+
+
+
+You could combine both approaches:
+Use indexed search for frequently queried terms or static datasets.
+Fall back to linear search for dynamic or rarely queried data.
+This hybrid approach balances preprocessing overhead with runtime performance.
