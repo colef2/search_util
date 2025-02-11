@@ -20,7 +20,7 @@ A Grep-like utility implemented in C++20 for recursively searching files within 
 
 1. Install CMake
 2. Verify installation with cmake --version. Add CMake to PATH if needed
-3. Navigate to the build directory: cd search_util/build
+3. Create build directory with "mkdir build" then navigate to it "cd build"
 4. Generate build files: cmake ..
 5. Build the project: cmake --build . --config Release
 6. Run the test suite: ctest (from the build directory)
