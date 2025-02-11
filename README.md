@@ -19,15 +19,15 @@ A Grep-like utility implemented in C++20 for recursively searching files within 
 ## Building the Project (Windows)
 
 1. Install CMake
-2. Verify installation with cmake --version. Add CMake to PATH if needed
+2. Verify installation with "cmake --version". Add CMake to PATH if needed
 3. Create build directory with "mkdir build" then navigate to it "cd build"
-4. Generate build files: cmake ..
-5. Build the project: cmake --build . --config Release
-6. Run the test suite: ctest (from the build directory)
+4. Generate build files: "cmake .."
+5. Build the project: "cmake --build . --config Release"
+6. Run the test suite: "ctest" (from the build directory)
 
-# Use Case
-1. Case sensitive: "./Build/Release/my_search_util "search" src/"
-2. Case sensitive: "./Build/Release/my_search_util -i "SEARCH" src/"
+# Use Case (still from Build directory)
+1. Case sensitive: "./Release/my_search_util "search" ../src/"
+2. Case sensitive: "./Release/my_search_util -i "SEARCH" ../src/"
 
 # Overview
 This project implements a Grep-like utility in C++ that recursively searches for a given query in all files within a directory. Key features include:
