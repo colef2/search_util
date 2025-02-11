@@ -5,7 +5,8 @@
 #include <stack>
 #include <thread>
 
-// If this were a security-focused application, would not have a blacklist or would handle differently.
+// Blacklist of file extensions to skip during search
+// Note: In a security-focused application, this approach would be handled differently
 const std::unordered_set<std::string> BoyerMoore::blacklisted_extensions = {
     ".exe", ".dll", ".so", ".dylib", ".bin", ".app",
     ".o", ".obj", ".class",
@@ -22,20 +23,26 @@ const std::unordered_set<std::string> BoyerMoore::blacklisted_extensions = {
 BoyerMoore::BoyerMoore(const std::string& query, const std::string& path, bool case_insensitive)
     : query(query), path(path), case_insensitive(case_insensitive),
       regex_pattern(case_insensitive ? std::regex(query, std::regex::icase) : std::regex(query)),
+      /* This creates a searcher object that preprocesses the pattern for faster searching*/
       bm_searcher(query.data(), query.data() + query.length())
 {
+    // Convert query to lowercase if case-insensitive search is requested
     if (case_insensitive) {
         std::transform(this->query.begin(), this->query.end(), this->query.begin(), ::tolower);
     }
 }
 
+// Check if a file should be skipped based on its extension
 bool BoyerMoore::should_skip_file(const fs::path& file_path) const {
     std::string extension = file_path.extension().string();
     std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
     return blacklisted_extensions.find(extension) != blacklisted_extensions.end();
 }
 
+// This ACSII check is useful to avoid processing binary or non-text files
 bool BoyerMoore::is_ascii_file(const fs::path& file_path) {
+    // Makes sure the file is opened in binary mode instead of text mode as
+    // in binary mode, the file's contents are read exactly as they are stored
     std::ifstream file(file_path, std::ios::binary);
     char ch;
     while (file.get(ch)) {
@@ -46,12 +53,14 @@ bool BoyerMoore::is_ascii_file(const fs::path& file_path) {
     return true;
 }
 
+// Normalize file paths to use forward slashes consistently for cross-platform compatability
 std::string BoyerMoore::normalize_path(const fs::path& path) {
     std::string normalized = path.string();
     std::replace(normalized.begin(), normalized.end(), '\\', '/'); // Replace backslashes with forward slashes
     return normalized;
 }
 
+// Search for the query string within a single file
 std::string BoyerMoore::search_file(const fs::path& file_path) {
     if (should_skip_file(file_path) || !is_ascii_file(file_path)) {
         return "";
@@ -67,6 +76,7 @@ std::string BoyerMoore::search_file(const fs::path& file_path) {
     std::string file_path_str = normalize_path(file_path.string());
     std::stringstream results;
 
+    // Search each line of the file for the query
     while (std::getline(file, line)) {
         std::string search_line = case_insensitive ? to_lower(line) : line;
         if (std::regex_search(search_line, regex_pattern)) {
@@ -77,13 +87,16 @@ std::string BoyerMoore::search_file(const fs::path& file_path) {
     return results.str();
 }
 
+// Convert a string to lowercase
 std::string BoyerMoore::to_lower(const std::string& s) {
     std::string lower = s;
     std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
     return lower;
 }
 
+// Search a directory recursively for the query string
 void BoyerMoore::search_directory(const fs::path& dir_path) {
+    // Each future represents an asynchronous operation that will eventually produce a 'std::string' result
     std::vector<std::future<std::string>> futures;
     std::stack<fs::path> directories_to_process; // Stack for manual recursion
     directories_to_process.push(dir_path);
@@ -93,13 +106,14 @@ void BoyerMoore::search_directory(const fs::path& dir_path) {
         directories_to_process.pop();
 
         try {
+            // Iterate through the contents of the current directory
             for (const auto& entry : fs::directory_iterator(current_dir, fs::directory_options::skip_permission_denied)) {
                 try {
                     if (entry.is_directory()) {
                         // Add subdirectory to stack for later processing
                         directories_to_process.push(entry.path());
                     } else if (entry.is_regular_file()) {
-                        // Process file asynchronously
+                        // Process file asynchronously to utilise multiple cores
                         futures.push_back(std::async(std::launch::async, &BoyerMoore::search_file, this, entry.path()));
                     }
                 } catch (const fs::filesystem_error&) {
@@ -126,6 +140,7 @@ void BoyerMoore::search_directory(const fs::path& dir_path) {
     }
 }
 
+// Main search function that handles both file and directory searches
 void BoyerMoore::search() {
     try {
         fs::path search_path(path);
